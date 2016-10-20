@@ -157,6 +157,8 @@ class SearchQuerySet(object):
     def post_process_results(self, results):
         to_cache = []
 
+        import uuid
+
         # Check if we wish to load all objects.
         if self._load_all:
             models_pks = {}
@@ -176,9 +178,12 @@ class SearchQuerySet(object):
                 model_objects = loaded_objects.get(result.model, {})
                 if result.pk not in model_objects:
                     try:
-                        result.pk = int(result.pk)
+                        result.pk = uuid.UUID(result.pk)
                     except ValueError:
-                        pass
+                        try:
+                            result.pk = int(result.pk)
+                        except ValueError:
+                            pass
                 try:
                     result._object = model_objects[result.pk]
                 except KeyError:
