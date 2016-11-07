@@ -649,7 +649,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                     else:
                         additional_fields['_distance'] = None
 
-                result = result_class(app_label, model_name, source[DJANGO_ID], raw_result['_score'], **additional_fields)
+                result = result_class(app_label=app_label,model_name=model_name, pk=source[DJANGO_ID], score=raw_result['_score'], kwargs=additional_fields)
                 results.append(result)
             else:
                 hits -= 1
