@@ -394,12 +394,12 @@ class SolrSearchBackendTestCase(TestCase):
         highlight_dict = {'simple.pre':'<i>', 'simple.post': '</i>'}
         self.assertEqual(self.sb.search('', highlight=highlight_dict), {'hits': 0, 'results': []})
         self.assertEqual(self.sb.search('Index', highlight=highlight_dict)['hits'], 3)
-        self.assertEqual([result.highlighted['text'][0] for result in self.sb.search('Index', highlight=highlight_dict)['results']], 
+        self.assertEqual([result.highlighted['text'][0] for result in self.sb.search('Index', highlight=highlight_dict)['results']],
             ['<i>Indexed</i>!\n1', '<i>Indexed</i>!\n2', '<i>Indexed</i>!\n3'])
 
         # full-form highlighting options
         highlight_dict = {'hl.simple.pre':'<i>', 'hl.simple.post': '</i>'}
-        self.assertEqual([result.highlighted['text'][0] for result in self.sb.search('Index', highlight=highlight_dict)['results']], 
+        self.assertEqual([result.highlighted['text'][0] for result in self.sb.search('Index', highlight=highlight_dict)['results']],
             ['<i>Indexed</i>!\n1', '<i>Indexed</i>!\n2', '<i>Indexed</i>!\n3'])
 
         self.assertEqual(self.sb.search('Indx')['hits'], 0)
@@ -1225,6 +1225,13 @@ class LiveSolrMoreLikeThisTestCase(TestCase):
         for i in (16, 17, 19, 22, 23):
             self.assertIn(i, top_filtered_results)
 
+        mlt_filtered = self.sqs.more_like_this(MockModel.objects.get(pk=3)).filter(name='daniel3')
+        self.assertLess(mlt_filtered.count(), all_mlt.count())
+        top_mlt_filtered_pks = [int(result.pk) for result in mlt_filtered[:5]]
+
+        for i in (17, 16, 19, 23, 22):
+            self.assertIn(i, top_mlt_filtered_pks)
+
         filtered_mlt_with_models = self.sqs.models(MockModel).more_like_this(MockModel.objects.get(pk=1))
         self.assertLessEqual(filtered_mlt_with_models.count(), all_mlt.count())
         top_filtered_with_models = [int(result.pk) for result in filtered_mlt_with_models[:5]]
@@ -1233,12 +1240,10 @@ class LiveSolrMoreLikeThisTestCase(TestCase):
 
     def test_more_like_this_defer(self):
         mi = MockModel.objects.defer('foo').get(pk=1)
-        # FIXME: this currently is known to fail because haystack.utils.loading doesn't see the
-        #        MockModel_Deferred_foo class as registered:
         deferred = self.sqs.models(MockModel).more_like_this(mi)
-        self.assertEqual(deferred.count(), 0)
-        self.assertEqual([result.pk for result in deferred], [])
-        self.assertEqual(len([result.pk for result in deferred]), 0)
+        top_results = [int(result.pk) for result in deferred[:5]]
+        for i in (14, 6, 4, 22, 10):
+            self.assertIn(i, top_results)
 
     def test_more_like_this_custom_result_class(self):
         """Ensure that swapping the ``result_class`` works"""
